@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>첫 출근 · 블록 사옥</title>
+    <script type="module" crossorigin src="./assets/index-7sxR97DY.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DglQ8bwO.css">
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div id="hud" class="hidden">
+      <div id="left-col">
+        <div id="objective" class="panel">
+          <div class="obj-label" id="obj-label"></div>
+          <div id="obj-text"></div>
+        </div>
+        <div id="missions" class="panel hidden">
+          <ul id="mis-list"></ul>
+        </div>
+      </div>
+      <div id="location" class="panel"></div>
+      <div id="round" class="panel hidden"></div>
+      <div id="crosshair"></div>
+      <div id="prompt" class="panel hidden"><kbd>E</kbd><span id="prompt-text"></span></div>
+      <div id="dialog" class="panel hidden">
+        <div id="dlg-name"></div>
+        <div id="dlg-text"></div>
+      </div>
+      <div id="toast" class="panel hidden"></div>
+      <div id="right-col">
+        <div id="inventory"></div>
+        <div id="badge-card" class="hidden">
+          <div id="bc-company"></div>
+          <div class="bc-photo"></div>
+          <div id="bc-name"></div>
+          <div id="bc-org"></div>
+        </div>
+      </div>
+      <div id="welcome" class="panel hidden">
+        <h2 id="card-title"></h2>
+        <p id="card-line1"></p>
+        <p id="card-line2"></p>
+      </div>
+      <div id="note" class="panel hidden">
+        <img id="note-img" alt="손을 잡은 두 사람과 하트를 그린 픽셀 그림" />
+        <p id="note-to"></p>
+        <div id="note-lines"></div>
+        <p id="note-from"></p>
+        <p class="note-close"><kbd>E</kbd>닫기</p>
+      </div>
+    </div>
+
+    <div id="overlay">
+      <div class="card panel">
+        <p class="eyebrow" id="ov-eyebrow"></p>
+        <h1 id="ov-title">첫 출근</h1>
+        <p id="ov-sub">사옥에 들어가 내 조직 층의 내 자리까지 가 보세요.</p>
+        <ul class="keys">
+          <li><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>이동</li>
+          <li><span><kbd>마우스</kbd></span>시점</li>
+          <li><span><kbd>E</kbd> / <kbd>클릭</kbd></span>상호작용</li>
+          <li><span><kbd>Shift</kbd></span>달리기</li>
+          <li><span><kbd>Space</kbd></span>점프</li>
+          <li><span><kbd>Esc</kbd></span>일시정지</li>
+        </ul>
+        <button id="start" type="button">클릭해서 시작</button>
+        <button id="start-drag" type="button" class="link">마우스가 고정되지 않으면 드래그 모드로 시작</button>
+        <p class="fine">입사를 기념해 개인이 만든 비공식 작품입니다. 회사의 공식 콘텐츠가 아니며, 건물 내부는 실제와 무관한 창작입니다. 키보드와 마우스가 있는 PC에서 열어 주세요.</p>
+      </div>
+    </div>
+
+  </body>
+</html>
