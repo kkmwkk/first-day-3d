@@ -36,7 +36,8 @@ export class Elevator {
   constructor({ scene, M, colliders, cfg, hooks }) {
     this.cfg = cfg;
     this.hooks = hooks;
-    this.served = [1, cfg.myFloor];
+    this.served = [1, cfg.myFloor]; // 지금 갈 수 있는 층. 권한이 생기면 grant로 늘어난다.
+    this.stops = [...new Set([1, cfg.serverFloor, cfg.myFloor])]; // 승강장이 있는 층
     this.floor = 1;
     this.target = 1;
     this.y = 0;
@@ -55,8 +56,12 @@ export class Elevator {
     scene.add(this.group);
     this.buildCar(M, colliders);
     this.landings = new Map();
-    for (const f of this.served) this.landings.set(f, this.buildLanding(scene, M, colliders, f));
+    for (const f of this.stops) this.landings.set(f, this.buildLanding(scene, M, colliders, f));
     this.apply();
+  }
+
+  grant(floor) {
+    if (this.stops.includes(floor) && !this.served.includes(floor)) this.served.push(floor);
   }
 
   carBox(colliders, x0, y0, z0, x1, y1, z1) {

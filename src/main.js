@@ -88,7 +88,7 @@ const elevator = new Elevator({
       if (r === 'outside') hud.toast('엘리베이터에 탄 다음 눌러 주세요');
       else if (r === 'same') hud.toast('지금 있는 층입니다');
       else if (r === 'denied') hud.toast(`${n}층은 출입 권한이 없습니다. 내 조직은 ${F}층입니다`);
-      else if (r === 'go') hud.toast(n === 1 ? '1층으로 내려갑니다' : `${n}층으로 올라갑니다`);
+      else if (r === 'go') hud.toast(`${n}층으로 ${n > elevator.floor ? '올라' : '내려'}갑니다`);
     },
     onDoorsOpen(floor) {
       if (floor === 1) reach('call');
@@ -97,6 +97,8 @@ const elevator = new Elevator({
       if (floor === F) {
         hud.toast(`${F}층입니다 · ${cfg.org}`);
         if (elevator.contains(player.pos)) reach('ride');
+      } else if (floor === cfg.serverFloor) {
+        hud.toast(`${floor}층 서버실입니다`);
       } else {
         hud.toast('1층 로비입니다');
       }
@@ -105,7 +107,7 @@ const elevator = new Elevator({
 });
 
 // ── 동료, 대화, 첫날 미션 ──
-const story = createStory({ scene, M, cfg, world, state, hud, player, confetti, showObjective });
+const story = createStory({ scene, M, cfg, world, state, hud, player, confetti, elevator, showObjective });
 
 // ── 상호작용 ──
 const interactables = [
@@ -276,7 +278,8 @@ function celebrate() {
 
 function locationText(p) {
   if (elevator.state === 'moving' && elevator.contains(p)) return `엘리베이터 ${elevator.displayText}F`;
-  if (p.y > world.yF - 1) return `${F}F · ${cfg.org}`;
+  if (Math.abs(p.y - world.yF) < 2) return `${F}F · ${cfg.org}`;
+  if (Math.abs(p.y - world.yS) < 2) return `${cfg.serverFloor}F · 서버실`;
   const indoors = Math.abs(p.x) < HALF_W && p.z < LOBBY_FRONT && p.z > BACK;
   return indoors ? '1F 로비' : '사옥 앞 광장';
 }
@@ -302,7 +305,7 @@ function logic(dt) {
     for (const f of g.flaps) f.pivot.rotation.y = f.openAngle * k;
   }
 
-  if (!state.done && p.y > world.yF - 0.5 && Math.hypot(p.x - world.seat.x, p.z - world.seat.z) < 1.5) celebrate();
+  if (!state.done && Math.abs(p.y - world.yF) < 1 && Math.hypot(p.x - world.seat.x, p.z - world.seat.z) < 1.5) celebrate();
 
   hud.setLocation(locationText(p));
 }

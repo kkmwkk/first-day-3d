@@ -14,12 +14,14 @@ export function buildWorld(scene, M, cfg) {
 
   ground(b, M);
   exterior(b, M, scene, cfg, H);
+  const yS = (cfg.serverFloor - 1) * FH;
   const lobbyParts = lobby(b, M, scene, cfg);
   const officeParts = office(b, M, scene, cfg, yF);
+  const serverParts = serverRoom(b, M, scene, cfg, yS);
   const cloudGroup = clouds(scene, M);
   b.finish();
 
-  return { colliders: b.colliders, clouds: cloudGroup, yF, ...lobbyParts, ...officeParts };
+  return { colliders: b.colliders, clouds: cloudGroup, yF, yS, ...lobbyParts, ...officeParts, ...serverParts };
 }
 
 function place(scene, mesh, x, y, z, rotY = 0) {
@@ -174,7 +176,7 @@ function clouds(scene, M) {
 
 // ───────────────────────── 엘리베이터 코어 (층마다 같은 모양) ─────────────────────────
 
-function core(b, M, scene, y) {
+function core(b, M, scene, y, wallMat = M.wall) {
   const top = y + CEIL;
   b.box(M.stoneDark, -6, y, BACK, SHAFT.x0, top, CORE_FRONT);
   b.box(M.stoneDark, SHAFT.x1, y, BACK, 6, top, CORE_FRONT);
@@ -197,8 +199,8 @@ function core(b, M, scene, y) {
   sign(scene, '점검 중', 0.8, 0.26, 2.5, y + 1.5, CORE_FRONT + 0.035, 0, { bg: '#f2b632', color: '#1b1b1b', size: 0.6 });
 
   // 코어 양옆의 뒷벽
-  b.box(M.wall, -HALF_W, y, BACK, -6, top, BACK + 0.15);
-  b.box(M.wall, 6, y, BACK, HALF_W, top, BACK + 0.15);
+  b.box(wallMat, -HALF_W, y, BACK, -6, top, BACK + 0.15);
+  b.box(wallMat, 6, y, BACK, HALF_W, top, BACK + 0.15);
 }
 
 // ───────────────────────── 1층 로비 ─────────────────────────
@@ -361,6 +363,68 @@ function lobby(b, M, scene, cfg) {
   return { entrance, badge, badgeHit, gate, padHits };
 }
 
+// ───────────────────────── 서버실 (오후 업무) ─────────────────────────
+
+function serverRoom(b, M, scene, cfg, y) {
+  const top = y + CEIL;
+  slabWithHole(b, M.serverFloor, -HALF_W, y - 0.3, BACK, HALF_W, y, -0.3, SHAFT);
+  slabWithHole(b, M.stoneDark, -HALF_W, top, BACK, HALF_W, y + FH, -0.3, SHAFT);
+  b.box(M.darkMetal, -HALF_W, y, BACK, -HALF_W + 0.15, top, -0.3);
+  b.box(M.darkMetal, HALF_W - 0.15, y, BACK, HALF_W, top, -0.3);
+  b.box(M.darkMetal, -HALF_W, y, -0.45, HALF_W, top, -0.3); // 창이 없는 앞벽
+  core(b, M, scene, y, M.darkMetal);
+
+  // 랙은 0.8m 간격으로 네 줄. 엘리베이터 앞은 가로지르는 통로로 비워 둔다.
+  const rows = [-4, -8, -12, -16];
+  const segments = [[-15.2, 13], [-0.8, 19]];
+  const racks = [];
+  for (const z of rows) {
+    for (const [x0, n] of segments) {
+      const x1 = x0 + n * 0.8;
+      b.collider(x0, y, z - 0.5, x1, y + 2.2, z + 0.5);
+      b.box(M.darkMetal, x0, y + 2.6, z - 0.2, x1, y + 2.68, z + 0.2, NS); // 케이블 트레이
+      b.box(M.screen, x0, y, z + 0.56, x1, y + 0.012, z + 0.64, NS); // 바닥 안내선
+      for (let i = 0; i < n; i++) racks.push({ x: x0 + i * 0.8 + 0.4, z });
+    }
+    b.box(M.glow, -15.2, top - 0.03, z + 1.85, 14.4, top, z + 2.15, NS); // 통로 조명
+  }
+  const rackMesh = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.78, 2.2, 1),
+    [M.rackSide, M.rackSide, M.rackSide, M.rackSide, M.rackFront, M.rackSide],
+    racks.length,
+  );
+  const at = new THREE.Matrix4();
+  racks.forEach((r, i) => rackMesh.setMatrixAt(i, at.makeTranslation(r.x, y + 1.1, r.z)));
+  rackMesh.frustumCulled = false;
+  scene.add(rackMesh);
+
+  // 엘리베이터 홀: 안내판과 관제 책상
+  b.box(M.glow, -15.2, top - 0.03, -19.35, 14.4, top, -19.05, NS);
+  const board = canvasPlane(1.6, 1.5, (g, w, h) => {
+    g.fillStyle = '#0b0d12';
+    g.fillRect(0, 0, w, h);
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillStyle = '#3ddc84';
+    g.font = font(h * 0.38, 900);
+    g.fillText(`${cfg.serverFloor}F`, w / 2, h * 0.3);
+    g.fillStyle = '#fff';
+    g.font = font(h * 0.15, 800);
+    g.fillText('서버실', w / 2, h * 0.62);
+    g.fillStyle = '#ff9a3d';
+    g.font = font(h * 0.08, 700);
+    g.fillText('관계자 외 출입 금지', w / 2, h * 0.84);
+  }, { ppm: 260 });
+  place(scene, board.mesh, 0.3, y + 1.85, CORE_FRONT + 0.012);
+  b.box(M.darkMetal, 4.4, y, -21.45, 7.4, y + 0.95, -20.7);
+  for (const mxn of [4.6, 5.55, 6.5]) {
+    b.box(M.black, mxn, y + 0.95, -21.3, mxn + 0.8, y + 1.5, -21.24, NS);
+    b.box(M.screen, mxn + 0.04, y + 0.99, -21.24, mxn + 0.76, y + 1.46, -21.234, NS);
+  }
+
+  return { racks };
+}
+
 // ───────────────────────── 내 조직 층 ─────────────────────────
 
 function desk(b, M, x, y, zc, dir, { mine, rng }) {
@@ -394,7 +458,7 @@ function office(b, M, scene, cfg, y) {
   const top = y + CEIL;
 
   slabWithHole(b, M.carpet, -HALF_W, y - 0.3, BACK, HALF_W, y, -0.3, SHAFT);
-  b.box(M.ceiling, -HALF_W, top, BACK, HALF_W, y + FH, -0.3);
+  slabWithHole(b, M.ceiling, -HALF_W, top, BACK, HALF_W, y + FH, -0.3, SHAFT);
   b.box(M.wall, -HALF_W, y, BACK, -HALF_W + 0.15, top, -0.3);
   b.box(M.wall, HALF_W - 0.15, y, BACK, HALF_W, top, -0.3);
   core(b, M, scene, y);

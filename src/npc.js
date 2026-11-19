@@ -96,8 +96,9 @@ function makeTag(name) {
   return mesh;
 }
 
-// 할 일이 있는 곳을 알려 주는 표식. kind: 'alert'(느낌표) | 'heart'
+// 할 일이 있는 곳을 알려 주는 표식. kind: 'alert'(느낌표) | 'fault'(빨간 느낌표) | 'heart'
 export function makeMarker(kind = 'alert') {
+  const fault = kind === 'fault';
   const { mesh } = canvasPlane(0.34, 0.34, (g, w) => {
     if (kind === 'heart') {
       g.fillStyle = '#ff5d8f';
@@ -107,7 +108,7 @@ export function makeMarker(kind = 'alert') {
       );
       return;
     }
-    g.fillStyle = '#ffb02e';
+    g.fillStyle = fault ? '#ff3b3b' : '#ffb02e';
     g.beginPath();
     g.moveTo(w / 2, w * 0.04);
     g.lineTo(w * 0.96, w / 2);
@@ -116,9 +117,9 @@ export function makeMarker(kind = 'alert') {
     g.closePath();
     g.fill();
     g.lineWidth = w * 0.06;
-    g.strokeStyle = '#131a2b';
+    g.strokeStyle = fault ? '#ffffff' : '#131a2b';
     g.stroke();
-    g.fillStyle = '#131a2b';
+    g.fillStyle = fault ? '#ffffff' : '#131a2b';
     g.font = font(w * 0.6, 900);
     g.textAlign = 'center';
     g.textBaseline = 'middle';

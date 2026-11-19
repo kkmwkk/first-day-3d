@@ -3,7 +3,7 @@ export const CONFIG = {
   name: '전민우',
   org: '소속 조직 (미정)',
   myFloor: 5, // 내 조직이 있는 층 (2 이상, totalFloors 이하)
-  totalFloors: 6, // 사옥 지상 층수
+  totalFloors: 6, // 사옥 지상 층수 (3 이상)
   company: 'MEGAZONECLOUD',
   // 내 자리 액자를 열면 나오는 쪽지. to와 from은 비워 두면 표시하지 않는다.
   note: {
@@ -14,7 +14,9 @@ export const CONFIG = {
 };
 
 export function resolveConfig(c = CONFIG) {
-  const totalFloors = Math.max(2, Math.min(20, Math.round(c.totalFloors) || 6));
+  const totalFloors = Math.max(3, Math.min(20, Math.round(c.totalFloors) || 6));
   const myFloor = Math.max(2, Math.min(totalFloors, Math.round(c.myFloor) || 2));
-  return { ...c, totalFloors, myFloor };
+  // 오후 업무가 열리는 서버실 층. 내 층과 겹치지 않게 잡는다.
+  const serverFloor = myFloor === 3 ? 2 : 3;
+  return { ...c, totalFloors, myFloor, serverFloor };
 }

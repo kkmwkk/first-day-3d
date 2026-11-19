@@ -143,6 +143,34 @@ const glassTex = () =>
     }
   });
 
+// 서버 랙 앞면: 장비 칸마다 작은 표시등이 켜져 있다.
+const rackFrontTex = () => {
+  const t = tex(16, 44, (g) => {
+    const r = makeRng(41);
+    for (let y = 0; y < 44; y++) for (let x = 0; x < 16; x++) put(g, x, y, 21, 24, 29);
+    for (let y = 0; y < 44; y++) {
+      put(g, 0, y, 46, 51, 60);
+      put(g, 15, y, 46, 51, 60);
+    }
+    for (let x = 0; x < 16; x++) {
+      put(g, x, 0, 46, 51, 60);
+      put(g, x, 43, 46, 51, 60);
+    }
+    for (let u = 2; u < 42; u += 4) {
+      for (let x = 1; x < 15; x++) {
+        put(g, x, u, 32, 36, 44);
+        put(g, x, u + 1, 32, 36, 44);
+      }
+      put(g, 2, u, 61, 220, 132);
+      if (r() > 0.45) put(g, 4, u, 58, 160, 255);
+      for (let x = 8; x < 14; x += 2) put(g, x, u + 1, 16, 18, 22);
+    }
+  });
+  t.minFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  return t;
+};
+
 function lambert(map, tile = [1, 1], extra = {}) {
   const m = new THREE.MeshLambertMaterial({ map, ...extra });
   m.userData.tile = tile;
@@ -182,5 +210,8 @@ export function createMaterials() {
     screen: new THREE.MeshBasicMaterial({ color: 0x8fd3ff }),
     glow: new THREE.MeshBasicMaterial({ color: 0xfff2c0 }),
     cloud: new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false }),
+    serverFloor: lambert(gridTex([66, 70, 80], 5, [44, 48, 58], 16, 23), [1.2, 1.2]),
+    rackSide: new THREE.MeshLambertMaterial({ color: 0x1c2026 }),
+    rackFront: new THREE.MeshBasicMaterial({ map: rackFrontTex() }),
   };
 }

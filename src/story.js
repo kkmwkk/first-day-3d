@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Npc, makeMarker } from './npc.js';
 import { blockMesh, canvasPlane, font } from './builder.js';
+import { createServerGame } from './server.js';
 
 const SKIN = [0xf2c9a5, 0xe8b88f, 0xd9a47a, 0xf7d7ba];
 const HAIR = [0x2a211b, 0x3b2a20, 0x5a3b28, 0x1c1c22, 0x7a4a2a];
@@ -18,14 +19,39 @@ const TEAM = ['lead', 'mentor', 'neighbor'];
 const pick = (npc, lines) => lines[npc.count++ % lines.length];
 const clock = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
 
-// 동료 캐릭터, 대화, 첫날 미션, 액자 쪽지를 맡는다.
-export function createStory({ scene, M, cfg, world, state, hud, player, confetti, showObjective }) {
+const GRADE_LINES = {
+  S: '전설의 신입이 나타났다…! 서버들이 박수를 치고 있어요.',
+  A: '첫날에 이 정도면 에이스예요.',
+  B: '좋아요, 금방 익숙해질 거예요.',
+  C: '괜찮아요, 서버도 첫날엔 떨려요. 다시 해 볼래요?',
+};
+
+// 동료 캐릭터, 대화, 첫날 미션, 오후 업무, 액자 쪽지를 맡는다.
+export function createStory({ scene, M, cfg, world, state, hud, player, confetti, elevator, showObjective }) {
   const F = cfg.myFloor;
+  const S = cfg.serverFloor;
   const yF = world.yF;
+  const yS = world.yS;
   const { x: mx, zc: mz } = world.my;
 
   // laptop: none → carried → installed / meeting: locked → open → running → done
-  const m = { unlocked: false, laptop: 'none', greeted: new Set(), coffee: false, brewing: 0, meeting: 'locked', call: 0, arrived: 0, hint: 0 };
+  // afternoon(오후 업무): locked → open → done
+  const m = {
+    unlocked: false,
+    laptop: 'none',
+    greeted: new Set(),
+    coffee: false,
+    brewing: 0,
+    meeting: 'locked',
+    call: 0,
+    arrived: 0,
+    hint: 0,
+    afternoon: 'locked',
+    afternoonCall: 0,
+    grantNote: 0,
+  };
+
+  const game = createServerGame({ scene, world, hud, player, onFinish: finishRound });
   let script = null; // 회의 장면처럼 차례로 흘러가는 대사
   let noteOpen = false;
 
@@ -50,6 +76,15 @@ export function createStory({ scene, M, cfg, world, state, hud, player, confetti
       return '여기 새 노트북입니다. 비밀번호는 포스트잇에 적어 두지 마세요!';
     }
     return pick(n, ['자리에 가서 설치해 보세요.', '안 켜지면… 일단 껐다 켜 보세요.']);
+  };
+
+  const engineerTalk = () => {
+    if (game.game.state !== 'idle') return '저 말고 서버를 봐요! 빨간 불!';
+    game.start();
+    showObjective();
+    return game.game.plays === 1
+      ? '빨간 불이 깜빡이는 서버 앞에서 E를 누르면 복구돼요. 60초 동안 최대한 많이! Shift로 달리세요.'
+      : '다시 도전이죠? 좋아요, 준비…';
   };
 
   const seated = (i, name, x, z, yaw, lines) => ({
@@ -161,6 +196,7 @@ export function createStory({ scene, M, cfg, world, state, hud, player, confetti
       yaw: Math.PI,
       talk: (n) => pick(n, ['이 머신은 원두를 방금 갈았을 때가 제일 맛있어요.', '하루 세 잔까지는 건강식입니다.']),
     },
+    { id: 'engineer', name: '인프라 엔지니어', look: look(8), pos: [3.2, yS, -19.4], yaw: -Math.PI / 2, talk: engineerTalk },
     seated(0, '개발자', 6.0, -9.25, Math.PI, ['빌드 돌리는 중이에요… 5분만요.', '어, 새로 오셨어요? 반가워요!']),
     seated(1, '디자이너', -11.2, -11.75, 0, ['이 파란색이랑 저 파란색, 차이 보이세요?', '환영해요! 자리 예쁘게 꾸몄네요.']),
     seated(2, '엔지니어', 10.8, -14.25, Math.PI, ['지금 배포 중이라… 숨 참고 있어요.', '무사히 끝났다! 아, 안녕하세요.']),
@@ -191,7 +227,10 @@ export function createStory({ scene, M, cfg, world, state, hud, player, confetti
 
   // ── 미션 ──
   function objective() {
-    if (m.meeting === 'done') return { text: '첫날 미션 완료! 자유롭게 둘러보세요', label: '완료' };
+    if (game.game.state !== 'idle') return { text: '빨간 불이 켜진 서버를 찾아 복구하세요', label: '오후 업무' };
+    if (m.afternoon === 'done') return { text: '첫날 업무 완료! 서버실에서 다시 도전할 수 있어요', label: '완료' };
+    if (m.afternoon === 'open') return { text: `엘리베이터로 ${S}층 서버실에 가서 인프라 엔지니어에게 말을 거세요`, label: '오후 업무' };
+    if (m.meeting === 'done') return { text: '잠시 숨을 돌리세요. 곧 오후 업무가 시작됩니다', label: '첫날 미션' };
     if (m.meeting === 'open' || m.meeting === 'running') return { text: '회의실에서 열리는 첫 팀 미팅에 참석하세요', label: '첫날 미션' };
     return { text: '첫날 미션을 하나씩 해결하세요', label: '첫날 미션' };
   }
@@ -209,10 +248,12 @@ export function createStory({ scene, M, cfg, world, state, hud, player, confetti
       openMeeting();
       items[3].locked = false;
     }
+    if (m.afternoon !== 'locked') items.push({ done: m.afternoon === 'done', text: `${S}층 서버실에서 장애 대응하기` });
     hud.setMissions(items);
     hud.setInventory([m.laptop === 'carried' && '노트북', m.coffee && m.meeting !== 'done' && '커피'].filter(Boolean));
     for (const id of TEAM) byId[id].showMarker = m.meeting === 'locked' && !m.greeted.has(id);
     byId.it.showMarker = m.laptop === 'none';
+    byId.engineer.showMarker = m.afternoon === 'open' && game.game.state === 'idle';
     showObjective();
   }
 
@@ -267,7 +308,7 @@ export function createStory({ scene, M, cfg, world, state, hud, player, confetti
     byId.neighbor.walkTo([[mx + 2.4, mz + 2.2], [-3, mz + 2.2], [-3, -18.2], ...door, [-10.2, -20.4], [-10.2, -23.3], [-11.3, -23.3]], { finalYaw: -Math.PI / 2, onArrive });
   }
 
-  const inMeetingRoom = (p) => p.y > yF - 0.5 && p.x > -17.7 && p.x < -9.2 && p.z > -25.8 && p.z < -19.3;
+  const inMeetingRoom = (p) => Math.abs(p.y - yF) < 1 && p.x > -17.7 && p.x < -9.2 && p.z > -25.8 && p.z < -19.3;
 
   function startMeeting() {
     m.meeting = 'running';
@@ -286,8 +327,29 @@ export function createStory({ scene, M, cfg, world, state, hud, player, confetti
 
   function finishMeeting() {
     m.meeting = 'done';
+    m.afternoonCall = 7;
     confetti.burst(new THREE.Vector3(player.pos.x, yF + 1.9, player.pos.z), yF);
-    hud.showCard('첫날 미션 완료!', `${cfg.name} 님, 오늘 하루 수고했어요`, `소요 시간 ${clock(state.playTime)}`, 12000);
+    hud.showCard('오전 미션 완료!', `${cfg.name} 님, 팀 합류를 환영합니다`, '오후에는 첫 업무가 기다리고 있어요', 6500);
+    refresh();
+  }
+
+  // ── 오후 업무: 서버실 장애 대응 ──
+  function openAfternoon() {
+    m.afternoon = 'open';
+    m.grantNote = 5;
+    elevator.grant(S);
+    hud.showDialog(byId.lead.name, `오후에는 첫 업무예요. ${S}층 서버실에 장애 알림이 떴어요. 가서 서버를 살려 주세요!`, 5500);
+    refresh();
+  }
+
+  function finishRound({ fixed, missed, grade, best, isBest }) {
+    const first = m.afternoon !== 'done';
+    m.afternoon = 'done';
+    confetti.burst(new THREE.Vector3(player.pos.x, yS + 1.9, player.pos.z), yS);
+    const record = `${isBest ? '신기록! ' : ''}최고 기록 ${best}대`;
+    hud.showCard('장애 대응 완료!', `복구 ${fixed}대 · 놓침 ${missed}대 · 등급 ${grade}`, first ? `${record} · 첫날 소요 시간 ${clock(state.playTime)}` : record, 11000);
+    byId.engineer.talkTimer = 4;
+    hud.showDialog(byId.engineer.name, GRADE_LINES[grade], 5000);
     refresh();
   }
 
@@ -321,6 +383,7 @@ export function createStory({ scene, M, cfg, world, state, hud, player, confetti
       },
     },
     { object: world.frameHit, prompt: () => (noteOpen ? null : '액자 보기'), act: openNote },
+    ...game.interactables,
   ];
 
   function update(dt, time, camera) {
@@ -366,6 +429,16 @@ export function createStory({ scene, M, cfg, world, state, hud, player, confetti
       }
     }
     if (noteOpen && Math.hypot(p.x - (mx + 1.36), p.z - (mz + 0.2)) > 2.8) closeNote();
+
+    if (m.afternoonCall > 0) {
+      m.afternoonCall -= dt;
+      if (m.afternoonCall <= 0) openAfternoon();
+    }
+    if (m.grantNote > 0) {
+      m.grantNote -= dt;
+      if (m.grantNote <= 0) hud.toast(`사원증에 ${S}층 서버실 출입 권한이 추가되었습니다`, 5000);
+    }
+    game.update(dt, time, camera);
   }
 
   // 표식은 멈춰 있을 때도 카메라를 향하도록 매 프레임 갱신한다.
@@ -378,5 +451,5 @@ export function createStory({ scene, M, cfg, world, state, hud, player, confetti
     });
   }
 
-  return { interactables, update, face, unlock, objective, closeNote, missions: m, npcs, byId };
+  return { interactables, update, face, unlock, objective, closeNote, missions: m, npcs, byId, server: game };
 }

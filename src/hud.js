@@ -46,7 +46,7 @@ export class Hud {
         return li;
       }),
     );
-    $('missions').classList.remove('hidden');
+    $('missions').classList.toggle('hidden', Boolean(this.roundText));
   }
 
   setInventory(names) {
@@ -57,6 +57,16 @@ export class Hud {
         return chip;
       }),
     );
+  }
+
+  // 미니게임 진행 상황 (null이면 숨긴다)
+  setRound(text) {
+    if (text === this.roundText) return;
+    this.roundText = text;
+    $('round').classList.toggle('hidden', !text);
+    if (text) $('round').textContent = text;
+    // 시간을 다투는 동안에는 화면을 가리는 미션 목록을 접어 둔다.
+    $('missions').classList.toggle('hidden', Boolean(text) || !$('mis-list').childElementCount);
   }
 
   setLocation(text) {
