@@ -5,6 +5,12 @@ export const CONFIG = {
   myFloor: 5, // 내 조직이 있는 층 (2 이상, totalFloors 이하)
   totalFloors: 6, // 사옥 지상 층수
   company: 'MEGAZONECLOUD',
+  // 내 자리 액자를 열면 나오는 쪽지. to와 from은 비워 두면 표시하지 않는다.
+  note: {
+    to: '',
+    lines: ['여기까지 찾아와 줘서 고마워.', '첫 출근, 잘하고 올게!'],
+    from: '',
+  },
 };
 
 export function resolveConfig(c = CONFIG) {

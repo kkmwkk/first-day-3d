@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Builder, blockMesh, canvasPlane, textDraw, font, hitBox } from './builder.js';
 import { makeRng } from './textures.js';
+import { drawPhoto } from './photo.js';
 import { FH, CEIL, HALF_W, BACK, LOBBY_FRONT, WING, SHAFT, DOOR, CORE_FRONT } from './layout.js';
 
 const NS = { solid: false };
@@ -319,6 +320,13 @@ function lobby(b, M, scene, cfg) {
   }
   const gate = { pads, flaps, collider: b.collider(-3.4, 0, -15.05, 3.4, CEIL, -14.95), open: false, frac: 0 };
 
+  // IT 지원 창구 (게이트 안쪽 오른편)
+  b.box(M.white, 10, 0, -21.2, 16, 1.0, -20.4);
+  b.box(M.wood, 9.95, 1.0, -21.25, 16.05, 1.06, -20.35, NS);
+  b.box(M.navy, 11.1, 2.7, -20.83, 14.9, 3.2, -20.77, NS);
+  sign(scene, 'IT 지원', 3.4, 0.4, 13, 2.95, -20.765, 0, { size: 0.62 });
+  for (let i = 0; i < 3; i++) b.box(M.darkMetal, 14.6, 1.06 + i * 0.04, -21.05, 15.1, 1.09 + i * 0.04, -20.7, NS);
+
   // 엘리베이터 홀
   core(b, M, scene, 0);
   const directory = canvasPlane(1.4, 1.9, (g, w, h) => {
@@ -371,7 +379,8 @@ function desk(b, M, x, y, zc, dir, { mine, rng }) {
     b.box(M.black, x + 0.5, y + 0.9, zm - 0.025, x + 1.1, y + 1.28, zm + 0.025, NS);
     if (!mine && rng() > 0.25) b.box(M.screen, x + 0.53, y + 0.93, zf, x + 1.07, y + 1.25, zf + dir * 0.006, NS);
     const zk = zc + dir * 0.52;
-    b.box(M.darkMetal, x + 0.55, y + 0.78, zk - 0.07, x + 1.05, y + 0.8, zk + 0.07, NS);
+    // 내 자리는 나중에 노트북을 놓을 수 있게 키보드 자리를 비워 둔다.
+    if (!mine) b.box(M.darkMetal, x + 0.55, y + 0.78, zk - 0.07, x + 1.05, y + 0.8, zk + 0.07, NS);
     if (!mine && rng() > 0.6) {
       const zp = zc + dir * 0.3;
       b.box(M.pot, x + 0.18, y + 0.78, zp - 0.07, x + 0.32, y + 0.9, zp + 0.07, NS);
@@ -466,6 +475,43 @@ function office(b, M, scene, cfg, y) {
   const giftHit = place(scene, hitBox(0.45, 0.45, 0.45), mx + 0.3, y + 0.92, mz + 0.54);
   b.box(M.white, mx + 1.25, y + 0.78, mz + 0.5, mx + 1.33, y + 0.88, mz + 0.58, NS);
 
+  // 액자 (열어 보면 쪽지가 나온다)
+  const photo = drawPhoto();
+  const photoTex = new THREE.CanvasTexture(photo);
+  photoTex.magFilter = THREE.NearestFilter;
+  photoTex.minFilter = THREE.NearestFilter;
+  photoTex.generateMipmaps = false;
+  photoTex.colorSpace = THREE.SRGBColorSpace;
+  const frame = new THREE.Group();
+  const picture = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.225), new THREE.MeshBasicMaterial({ map: photoTex }));
+  picture.position.z = 0.017;
+  frame.add(blockMesh(M.wood, 0.36, 0.285, 0.03), picture);
+  frame.position.set(mx + 1.36, y + 0.78 + 0.14, mz + 0.2);
+  frame.rotation.x = -0.14;
+  scene.add(frame);
+  const frameHit = place(scene, hitBox(0.44, 0.4, 0.3), mx + 1.36, y + 0.95, mz + 0.22);
+
+  // 노트북을 놓을 자리, 커피 머신, 회의실 화면
+  const laptopHit = place(scene, hitBox(0.6, 0.36, 0.42), mx + 0.8, y + 0.94, mz + 0.56);
+  const coffeeHit = place(scene, hitBox(0.7, 0.7, 0.7), 11.25, y + 1.2, -25.4);
+  const meetingScreen = canvasPlane(2.4, 1.2, (g, w, h) => {
+    g.fillStyle = '#0f1830';
+    g.fillRect(0, 0, w, h);
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillStyle = '#ff9a3d';
+    g.font = font(h * 0.2, 900);
+    g.fillText('TEAM MEETING', w / 2, h * 0.3);
+    g.fillStyle = '#fff';
+    g.font = font(h * 0.15, 800);
+    g.fillText(`새 팀원 소개 · ${cfg.name} 님`, w / 2, h * 0.58, w * 0.9);
+    g.fillStyle = '#c9d2e3';
+    g.font = font(h * 0.09, 600);
+    g.fillText(cfg.org, w / 2, h * 0.8, w * 0.9);
+  }, { ppm: 200 });
+  place(scene, meetingScreen.mesh, -HALF_W + 0.232, y + 1.9, -22.5, Math.PI / 2);
+  meetingScreen.mesh.visible = false;
+
   const bz = mz + 1.9;
   b.box(M.orange, mx - 0.9, y + 2.75, bz, mx + 2.5, y + 3.4, bz + 0.06, NS);
   b.box(M.white, mx - 0.7, y + 3.4, bz + 0.02, mx - 0.67, top, bz + 0.05, NS);
@@ -527,5 +573,16 @@ function office(b, M, scene, cfg, y) {
 
   for (const [x, z] of [[-16.9, -1.6], [16.9, -1.6], [16.9, -18.5], [-7.2, -17.6], [8, -20.5]]) plant(b, M, x, y, z);
 
-  return { seat, beacon, balloons, giftHit };
+  return {
+    seat,
+    beacon,
+    balloons,
+    giftHit,
+    photo,
+    frameHit,
+    laptopHit,
+    coffeeHit,
+    meetingScreen: meetingScreen.mesh,
+    my: { x: mx, zc: mz },
+  };
 }

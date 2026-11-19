@@ -6,6 +6,7 @@ import { Player } from './player.js';
 import { Elevator } from './elevator.js';
 import { Confetti } from './confetti.js';
 import { Hud } from './hud.js';
+import { createStory } from './story.js';
 import { HALF_W, LOBBY_FRONT, BACK } from './layout.js';
 
 const cfg = resolveConfig();
@@ -50,12 +51,17 @@ const STEPS = [
   { id: 'ride', text: `엘리베이터에 타서 ${F}층 버튼을 누르세요` },
   { id: 'seat', text: `내 자리를 찾아가세요 (명패: ${cfg.name})` },
 ];
-const DONE_TEXT = '첫 출근 완료! 자유롭게 둘러보세요';
-const state = { step: 0, hasBadge: false, giftOpened: false, done: false };
+const state = { step: 0, hasBadge: false, giftOpened: false, done: false, noteSeen: false, playTime: 0 };
 
+// 자리에 도착한 뒤의 목표는 첫날 미션(story)이 정한다.
 function showObjective() {
   const s = STEPS[state.step];
-  hud.setObjective(s ? s.text : DONE_TEXT, state.step, STEPS.length);
+  if (s) {
+    hud.setObjective(s.text, `목표 ${state.step + 1} / ${STEPS.length}`);
+    return;
+  }
+  const o = story.objective();
+  hud.setObjective(o.text, o.label);
 }
 
 // 해당 단계를 끝낸 것으로 처리한다. 순서를 건너뛰어도 뒤로 돌아가지 않는다.
@@ -98,6 +104,9 @@ const elevator = new Elevator({
   },
 });
 
+// ── 동료, 대화, 첫날 미션 ──
+const story = createStory({ scene, M, cfg, world, state, hud, player, confetti, showObjective });
+
 // ── 상호작용 ──
 const interactables = [
   {
@@ -135,6 +144,7 @@ const interactables = [
     },
   },
   ...elevator.interactables,
+  ...story.interactables,
 ];
 const targets = interactables.map((i) => i.object);
 const byObject = new Map(interactables.map((i) => [i.object, i]));
@@ -161,7 +171,9 @@ function updateFocus() {
 }
 
 function interact() {
-  if (running && focused) focused.act();
+  if (!running) return;
+  if (story.closeNote()) return; // 쪽지가 열려 있으면 닫는 데 쓴다
+  if (focused) focused.act();
 }
 
 // ── 입력 ──
@@ -257,8 +269,9 @@ function celebrate() {
   state.done = true;
   scene.remove(world.beacon);
   confetti.burst(new THREE.Vector3(world.seat.x, world.yF + 1.9, world.seat.z - 0.5), world.yF);
-  hud.showWelcome();
+  hud.showCard('첫 출근 완료!', `${cfg.name} 님, 입사를 축하합니다`, `${cfg.company} · ${cfg.org} · ${F}F`);
   reach('seat');
+  story.unlock();
 }
 
 function locationText(p) {
@@ -320,16 +333,19 @@ function frame(now) {
   }
   ambient(dt);
   player.syncCamera();
+  story.face(camera, time);
   renderer.render(scene, camera);
   updateFocus();
   requestAnimationFrame(frame);
 }
 
 function step(dt) {
+  state.playTime += dt;
   elevator.update(dt);
   player.lockY = elevator.isRiding(player.pos) ? elevator.y : null;
   player.update(dt, readInput(dt));
   logic(dt);
+  story.update(dt, state.playTime, camera);
 }
 
 requestAnimationFrame(frame);
@@ -344,6 +360,7 @@ window.__game = {
   renderer,
   scene,
   confetti,
+  story,
   celebrate,
   interact,
   step,

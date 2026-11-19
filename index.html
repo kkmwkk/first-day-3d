@@ -11,24 +11,43 @@
     <canvas id="game"></canvas>
 
     <div id="hud" class="hidden">
-      <div id="objective" class="panel">
-        <div class="obj-label">목표 <span id="obj-step"></span></div>
-        <div id="obj-text"></div>
+      <div id="left-col">
+        <div id="objective" class="panel">
+          <div class="obj-label" id="obj-label"></div>
+          <div id="obj-text"></div>
+        </div>
+        <div id="missions" class="panel hidden">
+          <ul id="mis-list"></ul>
+        </div>
       </div>
       <div id="location" class="panel"></div>
       <div id="crosshair"></div>
       <div id="prompt" class="panel hidden"><kbd>E</kbd><span id="prompt-text"></span></div>
+      <div id="dialog" class="panel hidden">
+        <div id="dlg-name"></div>
+        <div id="dlg-text"></div>
+      </div>
       <div id="toast" class="panel hidden"></div>
-      <div id="badge-card" class="hidden">
-        <div id="bc-company"></div>
-        <div class="bc-photo"></div>
-        <div id="bc-name"></div>
-        <div id="bc-org"></div>
+      <div id="right-col">
+        <div id="inventory"></div>
+        <div id="badge-card" class="hidden">
+          <div id="bc-company"></div>
+          <div class="bc-photo"></div>
+          <div id="bc-name"></div>
+          <div id="bc-org"></div>
+        </div>
       </div>
       <div id="welcome" class="panel hidden">
-        <h2>첫 출근 완료!</h2>
-        <p id="w-name"></p>
-        <p id="w-org"></p>
+        <h2 id="card-title"></h2>
+        <p id="card-line1"></p>
+        <p id="card-line2"></p>
+      </div>
+      <div id="note" class="panel hidden">
+        <img id="note-img" alt="손을 잡은 두 사람과 하트를 그린 픽셀 그림" />
+        <p id="note-to"></p>
+        <div id="note-lines"></div>
+        <p id="note-from"></p>
+        <p class="note-close"><kbd>E</kbd>닫기</p>
       </div>
     </div>
 

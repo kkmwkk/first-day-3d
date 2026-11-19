@@ -58,12 +58,167 @@ kbd {
   pointer-events: none;
 }
 
-#objective {
+#left-col {
   position: absolute;
   top: 16px;
   left: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
   max-width: min(440px, calc(100vw - 32px));
+}
+
+#objective {
   padding: 10px 14px;
+}
+
+#missions {
+  padding: 8px 14px 10px;
+}
+
+#mis-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+#mis-list li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+#mis-list li::before {
+  content: '□';
+  color: var(--accent);
+}
+
+#mis-list li.done {
+  color: #8f9bb3;
+  text-decoration: line-through;
+}
+
+#mis-list li.done::before {
+  content: '■';
+}
+
+#mis-list li.locked {
+  color: #6f7a90;
+}
+
+#mis-list li.locked::before {
+  content: '×';
+  color: #6f7a90;
+}
+
+#dialog {
+  position: absolute;
+  left: 50%;
+  bottom: 21%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 32px));
+  padding: 10px 16px 12px;
+}
+
+#dlg-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+#dlg-text {
+  margin-top: 2px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+#right-col {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+#inventory {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+#inventory span {
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--accent);
+  border: 3px solid var(--ink);
+}
+
+#note {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(380px, calc(100vw - 32px));
+  padding: 18px 20px 14px;
+  text-align: center;
+  color: var(--ink);
+  background: #fffaf0;
+  border-color: var(--ink);
+}
+
+#note-img {
+  display: block;
+  width: 100%;
+  image-rendering: pixelated;
+  border: 3px solid var(--ink);
+}
+
+#note p {
+  margin: 0;
+}
+
+#note-to {
+  margin-top: 14px !important;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: left;
+}
+
+#note-lines {
+  margin: 10px 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+#note-from {
+  font-size: 15px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.note-close {
+  margin-top: 12px !important;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5b6578;
+}
+
+.note-close kbd {
+  margin-right: 0.5em;
+  color: var(--paper);
+  background: var(--ink);
+  border-bottom-color: #5b6578;
 }
 
 .obj-label {
@@ -120,7 +275,7 @@ kbd {
 #toast {
   position: absolute;
   left: 50%;
-  bottom: 12%;
+  bottom: 8%;
   transform: translateX(-50%);
   max-width: calc(100vw - 32px);
   padding: 10px 16px;
@@ -131,9 +286,6 @@ kbd {
 }
 
 #badge-card {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
   width: 112px;
   padding-bottom: 8px;
   text-align: center;
@@ -195,12 +347,87 @@ kbd {
   font-weight: 700;
 }
 
-#welcome #w-org {
+#welcome #card-line2 {
   font-size: 14px;
   color: var(--muted);
 }
 
 /* 창이 작아 카드가 다 들어가지 않으면 스크롤로 시작 버튼까지 내려갈 수 있게 한다. */
+/* 좁은 창에서는 안내 상자들이 서로 겹치지 않게 줄인다. */
+@media (max-width: 640px), (max-height: 480px) {
+  #left-col {
+    top: 8px;
+    left: 8px;
+    gap: 6px;
+    max-width: calc(100vw - 16px);
+  }
+
+  #objective {
+    padding: 6px 10px;
+  }
+
+  #obj-text {
+    font-size: 14px;
+  }
+
+  #mis-list {
+    font-size: 12px;
+  }
+
+  #location {
+    top: auto;
+    right: auto;
+    left: 8px;
+    bottom: 8px;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+
+  #prompt {
+    top: calc(50% + 30px);
+    padding: 5px 10px;
+    font-size: 13px;
+  }
+
+  #dialog {
+    bottom: 84px;
+    padding: 8px 12px;
+  }
+
+  #dlg-text {
+    font-size: 14px;
+  }
+
+  #toast {
+    bottom: 44px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  #right-col {
+    right: 8px;
+    bottom: 8px;
+  }
+
+  #badge-card {
+    transform: scale(0.7);
+    transform-origin: bottom right;
+  }
+
+  #welcome {
+    top: 30%;
+    padding: 12px 16px;
+  }
+
+  #welcome h2 {
+    font-size: 22px;
+  }
+
+  #welcome p {
+    font-size: 14px;
+  }
+}
+
 #overlay {
   position: fixed;
   inset: 0;
